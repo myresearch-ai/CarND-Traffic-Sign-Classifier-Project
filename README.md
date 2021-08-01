@@ -205,9 +205,9 @@ Padding|VALID*
 
 *The asterisk denotes where necessary*
 
-5. **Making predicitons**: The model's performance proved superior. With 50 epochs, the model had attained an accuracy score of **98.9%** on the validation set. When tried on a set of German signs taken from the web, the model's performance was an impressive **100%** showing that model had picked up the right inductive biases to perform its inteded task. A point to note is that relevant callbacks to be applied to even further optimize the model - one such callback could be early stopping. Observe that the model had obtained higher accuracy score prior to the 50th epoch.
+5. **Making predicitons**: The model's performance proved superior. With 50 epochs, the model had attained an accuracy score of **99.2%** on the validation set. When tried on a set of German signs taken from the web, the model's performance was an impressive **100%** showing that model had picked up the right inductive biases to perform its inteded task. A point to note is that relevant callbacks to be applied to even further optimize the model - one such callback could be early stopping. Observe that the model had obtained higher accuracy score prior to the 50th epoch.
 
-![img9](https://user-images.githubusercontent.com/76077647/127777001-686698bd-f92e-44a8-b8af-d5a7634107ad.JPG)
+![img9](https://user-images.githubusercontent.com/76077647/127785105-09ac0d11-400a-4f5a-915e-cee646daaea2.JPG)
 
 7. **Analysis of softmax probabilities of new images**: A detailed analysis of the model's softmax probability scores of what the test images (ones from the web) could have been, shows its exceptional confidence in its predictions of class/category membership of each individual image. The image below is taken from the output of the model's guesses showing the actual input image with related space of softmax scores from the model's predictions.
 
@@ -218,3 +218,10 @@ Conclusion
 ---
 
 This goal of this project was to build a German traffic sign classifier using classic deep convolutional neural networks. Granted the success of LeNet-5, we used LeNet-5 as the foundational architecture to build our classifier model. The model demonstrated superior performance in classifying random German traffic signs extracted from the web. Future improvements could clonsider the use of techniques to regularize model's training. Earlier we noted that the model had scored an accuracy higher than the final reported, we could apply callbacks such as early stopping to aide in settling for a model at its optimum during training. Other techniques could involve transfer learning, whereby we could use a pretrained image model such as the VGG models and only fine tune output layers to fit to our application. There are a host of other techniques that we could consider but in the meantime, our current implemetation showcased impressive performance as is. 
+
+References & Credits
+---
+
+* ![Udacity - Self-Driving Car NanoDegree](http://www.udacity.com/drive)
+* https://github.com/jeremy-shannon
+* https://github.com/dkarunakaran
