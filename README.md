@@ -223,5 +223,4 @@ References & Credits
 ---
 
 * ![Udacity - Self-Driving Car NanoDegree](http://www.udacity.com/drive)
-* https://github.com/jeremy-shannon
 * https://github.com/dkarunakaran
