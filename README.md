@@ -3,7 +3,7 @@
 
 Overview
 ---
-The objective of this project is to use deep convolutional neural networks to classif traffic signs. The model is trained using [German Traffic Sign Dataset](http://benchmark.ini.rub.de/?section=gtsrb&subsection=dataset) and tested on images of the German traffic signs from the web. 
+The objective of this project is to use deep convolutional neural networks to classif traffic signs. The model is trained using [German Traffic Sign Dataset](http://benchmark.ini.rub.de/?section=gtsrb&subsection=dataset) and tested on random images of the German traffic signs from the web. 
 
 Steps
 ---
@@ -17,7 +17,7 @@ The following steps are comsidered to accomplish the defined objective.
 Implementation
 ---
 
-1. **Loading, exploring, transforming, and summarizing data**: Basic yet relevant steps were implemented to explore the data for purposes of gaining insight regarding the nature of the data. Simple statistical summaries were performed whose outcome could possibly affect how we reason about model development including the application of advanced computational techniques to better expose the statisitical features of the images to the model while aiding the model to pick up right inductive biases. Class or category inbalance is among statistical properties of a dataset that affects model performance in classification tasks. The plot below shows distributions of traffic sign categories in the training data.
+1. **Loading, exploring, transforming, and summarizing data**: Basic yet relevant steps were implemented to explore the data for purposes of gaining insight regarding the nature of the data. Simple statistical summaries were performed whose outcome could possibly affect how we reason about model development including the application of advanced computational techniques to better expose the statisitical characteristics of the images to the model while allowing the model to pick up right inductive biases. Class or category inbalance is among statistical properties of a dataset that affects model performance in classification tasks. The plot below shows distributions of traffic sign categories in the training data.
 
 ![img6](https://user-images.githubusercontent.com/76077647/127775679-90405c5b-b2d5-4106-b00a-e1a63b42c2b7.JPG)
 
@@ -27,15 +27,14 @@ description|measure
 -----------|-----------
 Train size|34,799
 Test  size|12,630
-Image shapes|(32, 32, 3)
+Image shapes|32x32x3
 Number of classes|43
 
-A pipeline of image transformations were implemented. Using prior knowledge of image transformations that prove effective for classification purporses, we chose the following techniques:
+A pipeline of image transformations was implemented. Insipred by transformations that previously worked well on traffic sign classifications e.g LeCun, the following [OpenCV2](https://opencv.org/) wrapper functions were implemented following standard practice:
 
-* Scaling
-* Warpiing
+* Warping affine
+* perspective Transform
 * Brightness
-* Translation
 
 These were implemented as function utilities that were applied in a pipeline to each individual image. The image  below shows a result after applying the translation utility.
 
@@ -43,70 +42,55 @@ These were implemented as function utilities that were applied in a pipeline to 
 
 
 ```
-# HELPER FUNCTIONS FOR DATA AUGMENTATION
+# HELPER FUNCTIONS FOR IMAGE DATA TRANSFORMATIONS
 
-import cv2
-
-def _image_scaling(img):
-    """Applies perspective transformation to a given image"""
-    rows,cols,_ = img.shape
-    # transform limits
-    px = np.random.randint(-2,2)
-    # ending locations
-    pts1 = np.float32([[px,px],[rows-px,px],[px,cols-px],[rows-px,cols-px]])
-    # starting locations (4 corners)
-    pts2 = np.float32([[0,0],[rows,0],[0,cols],[rows,cols]])
-    M = cv2.getPerspectiveTransform(pts1,pts2)
-    dst = cv2.warpPerspective(img,M,(rows,cols))
-    dst = dst[:,:,np.newaxis]
-
-    return dst
-
-def _image_warp(img):
+def _image_warpaffine(img):
     """Applies warp affine transformation to a given image"""
-    rows,cols,_ = img.shape
+    rows,cols = img.shape[0:2]
 
     # random scaling coefficients
-    rndx = np.random.rand(3) - 0.5
-    rndx *= cols * 0.06   # this coefficient determines the degree of warping
-    rndy = np.random.rand(3) - 0.5
-    rndy *= rows * 0.06
+    random_x = np.random.rand(3) - 0.5
+    random_x *= cols * 0.04 
+    random_y = np.random.rand(3) - 0.5
+    random_y *= rows * 0.04
 
-    # 3 starting points for transform, 1/4 way from edges
+    # 3 starting points for transform
     x1 = cols/4
     x2 = 3*cols/4
     y1 = rows/4
     y2 = 3*rows/4
-    pts1 = np.float32([[y1,x1],
-                       [y2,x1],
-                       [y1,x2]])
-    pts2 = np.float32([[y1+rndy[0],x1+rndx[0]],
-                       [y2+rndy[1],x1+rndx[1]],
-                       [y1+rndy[2],x2+rndx[2]]])
-    M = cv2.getAffineTransform(pts1,pts2)
+    points_in = np.float32([[y1,x1],[y2,x1],[y1,x2]])
+    points_out = np.float32([[y1+random_y[0],x1+random_x[0]],[y2+random_y[1],x1+random_x[1]],
+                             [y1+random_y[2],x2+random_x[2]]])
+    M = cv2.getAffineTransform(points_in,points_out)
     dst = cv2.warpAffine(img,M,(cols,rows))
     dst = dst[:,:,np.newaxis]
 
+    return dst
+
+def _image_perspective(img):
+    """Applies perspective tranformation to a given image"""
+    # Specify desired outputs size
+    width, height = img.shape[0:2]
+    # Specify congugate x, y coordinates
+    pixels = np.random.randint(-2,2)
+    points_in = np.float32([[pixels,pixels],[width-pixels,pixels],[pixels,height-pixels],[width-pixels,height-pixels]])
+    points_out= np.float32(([[0,0],[width,0],[0,height],[width,height]]))
+    # Perform perspective transformation using cv2
+    M = cv2.getPerspectiveTransform(points_in,points_out)
+    dst = cv2.warpPerspective(img,M,(width,height))
+    dst = dst[:,:,np.newaxis]
+    
     return dst
 
 def _image_brightness(img):
     """Manipulates brightness/contrast of an image"""
-    shifted = img + 1.0   # shift to (0,2) range
-    img_max_value = max(shifted.flatten())
+    shifted_img = img + 1.0   
+    img_max_value = max(shifted_img.flatten())
     max_coef = 2.0/img_max_value
     min_coef = max_coef - 0.1
     coef = np.random.uniform(min_coef, max_coef)
-    dst = shifted * coef - 1.0
-    return dst
-
-def _image_translate(img):
-    rows,cols,_ = img.shape
-    # allow translation up to px pixels in x and y directions
-    px = 2
-    dx,dy = np.random.randint(-px,px,2)
-    M = np.float32([[1,0,dx],[0,1,dy]])
-    dst = cv2.warpAffine(img,M,(cols,rows))
-    dst = dst[:,:,np.newaxis]
+    dst = shifted_img * coef - 1.0
     return dst
 
 def _image_visualize(img, transformation_function):
@@ -197,8 +181,8 @@ The table summarizes a few hyperparameters used to train our implementation.
 
 Hyperparam|value
 ----------|---------
-Learning rate|0.0009
-Batch size|128
+Learning rate|0.0005
+Batch size|256
 Epochs|50
 Dropout|True*
 Padding|VALID*
@@ -217,7 +201,7 @@ Padding|VALID*
 Conclusion
 ---
 
-This goal of this project was to build a German traffic sign classifier using classic deep convolutional neural networks. Granted the success of LeNet-5, we used LeNet-5 as the foundational architecture to build our classifier model. The model demonstrated superior performance in classifying random German traffic signs extracted from the web. Future improvements could clonsider the use of techniques to regularize model's training. Earlier we noted that the model had scored an accuracy higher than the final reported, we could apply callbacks such as early stopping to aide in settling for a model at its optimum during training. Other techniques could involve transfer learning, whereby we could use a pretrained image model such as the VGG models and only fine tune output layers to fit to our application. There are a host of other techniques that we could consider but in the meantime, our current implemetation showcased impressive performance as is. 
+This goal of this project was to build a German traffic sign classifier using classic deep convolutional neural networks. Granted the success of LeNet-5, we used LeNet-5 as the foundational architecture to build our classifier model. The model demonstrated impressive performance in classifying random German traffic signs extracted from the web. Future improvements could consider the use of callbacks to perform helpful actions such as early stopping to train more optimal models. Earlier we noted that the model had scored an accuracy higher than the final reported score, early stopping could have been useful. Other techniques could involve transfer learning, whereby we could use a scaled pre-trained image classifier such as the VGG models and only adapt the output layers to fit to our application. There are a host of other techniques that we could consider such as the use of genetic algorithms for model optimization but in the meantime, our current implemetation perfromed fairly well. 
 
 References & Credits
 ---
